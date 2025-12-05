@@ -1,0 +1,119 @@
+{
+  "project_info": {
+    "project_name": "SimpleDeliveryTracker_MVP",
+    "description": "카카오톡 채널 연계용 비회원 배송 정보 조회 모바일 웹 서비스",
+    "target_users": {
+      "end_user": "배송 정보를 확인하려는 일반 구매자 (모바일 중심)",
+      "admin": "운송장 정보를 엑셀로 업로드하고 관리하는 운영자 (PC 중심)"
+    }
+  },
+  "tech_stack": {
+    "frontend": "Next.js 14+ (App Router), Tailwind CSS, Lucide React (Icons)",
+    "backend_baas": "Supabase",
+    "database": "PostgreSQL (via Supabase)",
+    "deployment": "Vercel (Recommended)",
+    "utils": "xlsx (SheetJS) for Excel parsing"
+  },
+  "core_policies": {
+    "data_lifecycle": {
+      "active_period": "업로드 후 5일 (120시간) 동안 조회 가능",
+      "retention_period": "업로드 후 14일 보관, 이후 자동 영구 삭제 (Hard Delete)",
+      "implementation": "Supabase pg_cron or Edge Function for daily cleanup"
+    },
+    "data_standardization": {
+      "phone_number": "모든 전화번호 입력(엑셀, 수기, 조회) 시 '숫자(0-9)'를 제외한 모든 문자(공백, -, . 등)를 제거 후 DB 저장 및 비교 수행"
+    },
+    "user_auth": {
+      "method": "None (Public Access)",
+      "verification": "수취인 이름 + 휴대폰 번호 뒷 4자리 일치 시 조회 허용"
+    },
+    "admin_auth": {
+      "method": "Supabase Auth (Email/Password)",
+      "policy": "단일 마스터 계정 운용"
+    }
+  },
+  "database_schema_proposal": {
+    "tables": [
+      {
+        "name": "carriers",
+        "description": "택배사 정보 및 조회 URL 관리",
+        "columns": [
+          { "name": "id", "type": "int8", "is_primary": true },
+          { "name": "name", "type": "text", "note": "택배사명 (예: CJ대한통운)" },
+          { "name": "base_url", "type": "text", "note": "조회 URL 패턴" }
+        ]
+      },
+      {
+        "name": "shipments",
+        "description": "배송 정보 데이터",
+        "columns": [
+          { "name": "id", "type": "uuid", "is_primary": true },
+          { "name": "created_at", "type": "timestamptz", "default": "now()" },
+          { "name": "recipient_name", "type": "text", "note": "수취인 이름 (공백 제거 권장)" },
+          { "name": "recipient_phone_full", "type": "text", "note": "전체 전화번호 (숫자만 저장, 예: 01012345678)" },
+          { "name": "recipient_phone_last4", "type": "text", "note": "전화번호 뒷 4자리 (숫자만 저장, 예: 5678)" },
+          { "name": "carrier_id", "type": "int8", "foreign_key": "carriers.id" },
+          { "name": "tracking_number", "type": "text", "note": "운송장 번호 (하이픈 제거 후 저장 권장)" },
+          { "name": "product_name", "type": "text", "note": "내부 관리용 상품명 (사용자 비노출)" }
+        ]
+      }
+    ]
+  },
+  "feature_specifications": {
+    "user_features": [
+      {
+        "feature": "배송 조회",
+        "inputs": ["이름", "휴대폰 뒷 4자리"],
+        "logic": {
+          "preprocessing": "사용자 입력 값에서 숫자 이외 문자 제거 (Regex: /[^0-9]/g)",
+          "query": "shipments 테이블에서 (name == input_name) AND (phone_last4 == cleaned_input_last4) AND (active_period_valid) 검색"
+        },
+        "output_ui": "카드 리스트 형태 (복수 건 허용)"
+      },
+      {
+        "feature": "결과 표시",
+        "components": [
+          "택배사명 표시",
+          "운송장 번호 표시",
+          "복사 버튼 (Clipboard API)",
+          "배송 조회 버튼 (carriers.base_url + tracking_number)"
+        ]
+      },
+      {
+        "feature": "조회 실패",
+        "ui": "에러 메시지 + 카카오톡 채널 상담 버튼 표시"
+      }
+    ],
+    "admin_features": [
+      {
+        "feature": "대시보드",
+        "components": ["배송 목록 테이블", "검색 필터", "상태 배지"]
+      },
+      {
+        "feature": "엑셀 업로드",
+        "library": "xlsx",
+        "fixed_columns": ["수취인명", "전화번호", "택배사명", "운송장번호", "상품명"],
+        "process": [
+          "1. 파일 파싱 (Parse)",
+          "2. 데이터 전처리 (Sanitize): 전화번호 컬럼에서 하이픈(-), 공백, 특수문자 제거",
+          "3. 유효성 검사 (Validate): 전화번호 길이 체크 등",
+          "4. DB 저장 (Bulk Insert): phone_full 및 phone_last4 자동 추출 저장"
+        ]
+      },
+      {
+        "feature": "개별 등록/수정",
+        "logic": "입력 폼에서 저장 시 전화번호 전처리 로직 동일 적용"
+      }
+    ]
+  },
+  "ui_ux_guidelines": {
+    "theme": "Mobile-First, Clean & Minimal",
+    "user_view": {
+      "landing": "로고 중앙 배치, 큰 입력 폼, 강조된 조회 버튼",
+      "result": "정보의 명확성 우선, 불필요한 장식 배제"
+    },
+    "admin_view": {
+      "layout": "좌측 사이드바 또는 상단 네비게이션, 데이터 중심의 테이블 뷰"
+    }
+  }
+}

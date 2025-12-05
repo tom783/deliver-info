@@ -1,0 +1,88 @@
+{
+  "project_meta": {
+    "project_name": "SimpleDeliveryTracker_MVP",
+    "version": "1.2.0",
+    "description": "카카오톡 채널 연계용 비회원 배송 정보 조회 모바일 웹 서비스 (50대+ 타겟)",
+    "status": "Ready for Development"
+  },
+  "development_strategy": {
+    "methodology": "UI-Driven Development (Frontend First)",
+    "rationale": "Phase 1에서 UI와 Mock Data로 UX를 확정하고, Phase 2에서 Prisma를 통해 실제 DB를 연결함",
+    "schema_management": "Prisma Schema를 Single Source of Truth로 사용"
+  },
+  "tech_stack": {
+    "framework": "Next.js 14+ (App Router)",
+    "language": "TypeScript",
+    "styling": "Tailwind CSS, Shadcn/ui, Lucide React",
+    "backend_baas": "Supabase (PostgreSQL)",
+    "orm": "Prisma ORM",
+    "state_management": {
+      "server_state": "TanStack Query v5 (Initial: Mock -> Final: Server Actions via Prisma)",
+      "client_state": "Zustand"
+    }
+  },
+  "architecture_rules": {
+    "pattern": "Presentation-Container Pattern",
+    "description": "로직(Container)과 UI(View)의 철저한 분리",
+    "directory_structure": {
+      ".ai-docs/": "AI 협업 문서 (PRD, Conventions)",
+      "app/": "Next.js App Router (Page는 Container만 호출)",
+      "containers/": "[Logic] 비즈니스 로직, 상태 관리, Mock 데이터 주입",
+      "views/": "[UI] 순수 렌더링 컴포넌트 (Props 의존)",
+      "components/ui/": "Shadcn UI Atoms",
+      "data/mocks/": "개발용 더미 데이터 (e.g., mock_shipments.ts)",
+      "lib/prisma.ts": "Prisma Client 인스턴스 (Phase 2 예정)",
+      "prisma/": "schema.prisma 및 마이그레이션 (Phase 2 예정)",
+      "actions/": "Server Actions (Phase 2 예정)"
+    }
+  },
+  "database_schema_design": {
+    "tool": "Prisma Schema (schema.prisma)",
+    "note": "Phase 2에서 구현 예정이나, 타입 정의 시 참고할 것",
+    "models": [
+      {
+        "name": "Carrier",
+        "fields": ["id (BigInt, PK)", "name (String)", "base_url (String)"]
+      },
+      {
+        "name": "Shipment",
+        "fields": [
+          "id (UUID, PK)", "createdAt (DateTime)",
+          "recipientName (String)", "recipientPhoneFull (String)", "recipientPhoneLast4 (String)",
+          "carrierId (BigInt, FK)", "trackingNumber (String)", "productName (String)"
+        ]
+      }
+    ]
+  },
+  "ui_ux_guidelines": {
+    "theme_concept": "Kakao Business Style",
+    "colors": {
+      "primary": "#FEE500 (Kakao Yellow)",
+      "text_main": "#191919",
+      "text_sub": "#999999",
+      "background": "#FFFFFF",
+      "error": "#FF6B6B"
+    },
+    "accessibility": "Font 18px+, Input Height 50px+, High Contrast, 시각적 피드백 강화"
+  },
+  "feature_specifications": {
+    "user_flow": {
+      "landing": "HomeContainer -> HomeView (입력 폼)",
+      "result": "ResultContainer -> ResultView (결과 카드)"
+    },
+    "admin_flow": {
+      "dashboard": "DashboardContainer -> DashboardView (테이블)",
+      "upload": "ExcelUploadContainer -> ExcelUploadView"
+    }
+  },
+  "implementation_steps": [
+    "Phase 1: UI & Scaffolding (Frontend Focus)",
+    "  1. Next.js, Tailwind, Shadcn UI 설치 및 폴더 구조 세팅",
+    "  2. View 컴포넌트 퍼블리싱 (Kakao Style, Accessibility 준수)",
+    "  3. Mock Data를 이용한 Container 로직 구현 및 화면 흐름 검증",
+    "Phase 2: Database & Backend (Prisma Integration)",
+    "  4. Supabase 프로젝트 생성 및 Prisma 초기화",
+    "  5. Server Actions 구현 및 Mock 데이터 교체",
+    "Phase 3: Finalize (Deployment)"
+  ]
+}
