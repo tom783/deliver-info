@@ -14,3 +14,13 @@ export interface Shipment {
   tracking_number: string;
   product_name: string;
 }
+
+export type UserRole = 'master' | 'sub_admin';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  created_at: string;
+}

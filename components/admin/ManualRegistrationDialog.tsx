@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,17 +12,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Carrier } from '@/types';
+import { createShipment } from '@/lib/api/shipments';
 
 interface ManualRegistrationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   carriers: Carrier[];
+  onSuccess?: () => void;
 }
 
 export const ManualRegistrationDialog: React.FC<ManualRegistrationDialogProps> = ({
   open,
   onOpenChange,
   carriers,
+  onSuccess,
 }) => {
   const [formData, setFormData] = useState({
     recipientName: '',
@@ -32,29 +35,64 @@ export const ManualRegistrationDialog: React.FC<ManualRegistrationDialogProps> =
     productName: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setError(null);
+      setFormData({
+        recipientName: '',
+        phone: '',
+        carrierId: '',
+        trackingNumber: '',
+        productName: '',
+      });
+    }
+  }, [open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // 클라이언트 유효성 검사
+    const phoneDigits = formData.phone.replace(/\D/g, '');
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+      setError('전화번호는 10-11자리 숫자여야 합니다');
+      setIsSubmitting(false);
+      return;
+    }
 
-    toast.success('배송 정보가 등록되었습니다.');
-    setIsSubmitting(false);
-    setFormData({
-      recipientName: '',
-      phone: '',
-      carrierId: '',
-      trackingNumber: '',
-      productName: '',
-    });
-    onOpenChange(false);
+    if (!/^[a-zA-Z0-9]+$/.test(formData.trackingNumber)) {
+      setError('운송장번호는 영문과 숫자만 입력 가능합니다');
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      await createShipment({
+        recipientName: formData.recipientName,
+        phone: formData.phone,
+        carrierId: parseInt(formData.carrierId, 10),
+        trackingNumber: formData.trackingNumber,
+        productName: formData.productName,
+      });
+
+      toast.success('배송 정보가 등록되었습니다.');
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (err) {
+      console.error('Create shipment error:', err);
+      setError(err instanceof Error ? err.message : '등록 중 오류가 발생했습니다');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -67,6 +105,11 @@ export const ManualRegistrationDialog: React.FC<ManualRegistrationDialogProps> =
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+          {error && (
+            <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
+              {error}
+            </div>
+          )}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="recipientName" className="text-right">
               수취인명

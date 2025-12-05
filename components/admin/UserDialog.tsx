@@ -10,72 +10,83 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { User, UserRole } from '@/data/mocks/users';
+import { User, UserRole } from '@/types';
 
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User | null;
-  onSave: (user: Omit<User, 'id' | 'created_at'> & { id?: number }) => void;
+  onSave: (user: {
+    email?: string;
+    password?: string;
+    name: string;
+    role: UserRole;
+    id?: string;
+  }) => Promise<void>;
 }
 
-export const UserDialog: React.FC<UserDialogProps> = ({
-  open,
-  onOpenChange,
-  user,
-  onSave,
-}) => {
+export const UserDialog: React.FC<UserDialogProps> = ({ open, onOpenChange, user, onSave }) => {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     name: '',
     password: '',
     role: 'sub_admin' as UserRole,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      setFormData({
-        username: user.username,
-        name: user.name,
-        password: '', // Password is not filled for security
-        role: user.role,
-      });
-    } else {
-      setFormData({
-        username: '',
-        name: '',
-        password: '',
-        role: 'sub_admin',
-      });
+    if (open) {
+      setError(null);
+      if (user) {
+        setFormData({
+          email: user.email,
+          name: user.name,
+          password: '',
+          role: user.role,
+        });
+      } else {
+        setFormData({
+          email: '',
+          name: '',
+          password: '',
+          role: 'sub_admin',
+        });
+      }
     }
   }, [user, open]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // 클라이언트 측 유효성 검사
+    if (!user && formData.password.length < 6) {
+      setError('비밀번호는 6자 이상이어야 합니다');
+      setIsSubmitting(false);
+      return;
+    }
 
-    onSave({
-      id: user?.id,
-      username: formData.username,
-      name: formData.name,
-      role: formData.role,
-    });
-
-    toast.success(user ? '사용자 정보가 수정되었습니다.' : '새 사용자가 등록되었습니다.');
-    setIsSubmitting(false);
-    onOpenChange(false);
+    try {
+      await onSave({
+        id: user?.id,
+        email: user ? undefined : formData.email,
+        password: formData.password || undefined,
+        name: formData.name,
+        role: formData.role,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '저장 중 오류가 발생했습니다');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -84,24 +95,28 @@ export const UserDialog: React.FC<UserDialogProps> = ({
         <DialogHeader>
           <DialogTitle>{user ? '사용자 수정' : '사용자 등록'}</DialogTitle>
           <DialogDescription>
-            {user
-              ? '사용자 정보를 수정합니다.'
-              : '새로운 관리자 계정을 생성합니다.'}
+            {user ? '사용자 정보를 수정합니다.' : '새로운 관리자 계정을 생성합니다.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+          {error && (
+            <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
+              {error}
+            </div>
+          )}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="username" className="text-right">
-              아이디
+            <Label htmlFor="email" className="text-right">
+              이메일
             </Label>
             <Input
-              id="username"
-              name="username"
-              value={formData.username}
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
               onChange={handleChange}
               className="col-span-3"
-              required
-              disabled={!!user} // Username cannot be changed
+              required={!user}
+              disabled={!!user} // Email cannot be changed
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -149,11 +164,7 @@ export const UserDialog: React.FC<UserDialogProps> = ({
             </select>
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               취소
             </Button>
             <Button type="submit" disabled={isSubmitting}>

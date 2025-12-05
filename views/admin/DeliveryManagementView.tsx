@@ -30,6 +30,13 @@ interface DeliveryManagementViewProps {
   shipments: Shipment[];
   carriers: Carrier[];
   searchTerm: string;
+  isLoading?: boolean;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
   onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   isUploadDialogOpen: boolean;
   setIsUploadDialogOpen: (open: boolean) => void;
@@ -43,12 +50,15 @@ interface DeliveryManagementViewProps {
   onEditClick: (shipment: Shipment) => void;
   onDeleteClick: (shipment: Shipment) => void;
   onDeleteConfirm: () => void;
+  onSuccess?: () => void;
 }
 
 export const DeliveryManagementView: React.FC<DeliveryManagementViewProps> = ({
   shipments,
   carriers,
   searchTerm,
+  isLoading,
+  pagination,
   onSearchChange,
   isUploadDialogOpen,
   setIsUploadDialogOpen,
@@ -62,6 +72,7 @@ export const DeliveryManagementView: React.FC<DeliveryManagementViewProps> = ({
   onEditClick,
   onDeleteClick,
   onDeleteConfirm,
+  onSuccess,
 }) => {
   const getCarrierName = (id: number) => {
     return carriers.find((c) => c.id === id)?.name || 'Unknown';
@@ -186,12 +197,14 @@ export const DeliveryManagementView: React.FC<DeliveryManagementViewProps> = ({
       <ExcelUploadDialog
         open={isUploadDialogOpen}
         onOpenChange={setIsUploadDialogOpen}
+        onSuccess={onSuccess}
       />
-      
+
       <ManualRegistrationDialog
         open={isManualRegisterDialogOpen}
         onOpenChange={setIsManualRegisterDialogOpen}
         carriers={carriers}
+        onSuccess={onSuccess}
       />
 
       <EditDeliveryDialog
@@ -199,6 +212,7 @@ export const DeliveryManagementView: React.FC<DeliveryManagementViewProps> = ({
         onOpenChange={setIsEditOpen}
         shipment={selectedShipment}
         carriers={carriers}
+        onSuccess={onSuccess}
       />
 
       <DeleteConfirmationDialog

@@ -10,6 +10,7 @@ interface ResultViewProps {
   shipments: Shipment[];
   carriers: Carrier[];
   isLoading: boolean;
+  error?: string | null;
   searchParams: { name: string; phone: string };
 }
 
@@ -17,6 +18,7 @@ export const ResultView: React.FC<ResultViewProps> = ({
   shipments,
   carriers,
   isLoading,
+  error,
   searchParams,
 }) => {
   const getCarrier = (id: number) => carriers.find((c) => c.id === id);
@@ -35,6 +37,22 @@ export const ResultView: React.FC<ResultViewProps> = ({
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
         <p className="text-lg text-gray-600">배송 정보를 조회하고 있습니다...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+        <Card className="border-none shadow-sm max-w-md w-full">
+          <CardContent className="flex flex-col items-center justify-center py-10 space-y-4">
+            <Package className="w-12 h-12 text-red-300" />
+            <p className="text-red-500 text-center">{error}</p>
+            <Button variant="outline" onClick={() => window.history.back()}>
+              다시 조회하기
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

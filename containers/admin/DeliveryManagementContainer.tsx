@@ -1,30 +1,65 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DeliveryManagementView } from '@/views/admin/DeliveryManagementView';
-import { MOCK_SHIPMENTS, MOCK_CARRIERS } from '@/data/mocks/shipments';
-import { Shipment } from '@/types';
+import { getAdminShipments, deleteShipment } from '@/lib/api/shipments';
+import { getCarriers } from '@/lib/api/carriers';
+import { Shipment, Carrier } from '@/types';
+import { toast } from 'sonner';
 
 export const DeliveryManagementContainer = () => {
+  const [shipments, setShipments] = useState<(Shipment & { carrier: Carrier })[]>([]);
+  const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  });
+
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isManualRegisterDialogOpen, setIsManualRegisterDialogOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
 
-  // Client-side filtering
-  const filteredShipments = MOCK_SHIPMENTS.filter((shipment) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      shipment.recipient_name.toLowerCase().includes(searchLower) ||
-      shipment.recipient_phone_full.includes(searchLower) ||
-      shipment.tracking_number.includes(searchLower)
-    );
-  });
+  const fetchShipments = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getAdminShipments(pagination.page, pagination.limit, searchTerm);
+      setShipments(data.shipments);
+      setPagination(data.pagination);
+    } catch (error) {
+      console.error('Fetch shipments error:', error);
+      toast.error('배송 목록을 불러오는데 실패했습니다');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [pagination.page, pagination.limit, searchTerm]);
+
+  const fetchCarriers = useCallback(async () => {
+    try {
+      const data = await getCarriers();
+      setCarriers(data.carriers);
+    } catch (error) {
+      console.error('Fetch carriers error:', error);
+      toast.error('택배사 목록을 불러오는데 실패했습니다');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCarriers();
+  }, [fetchCarriers]);
+
+  useEffect(() => {
+    fetchShipments();
+  }, [fetchShipments]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const handleEditClick = (shipment: Shipment) => {
@@ -37,17 +72,32 @@ export const DeliveryManagementContainer = () => {
     setIsDeleteOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    // In a real app, we would delete the shipment here
-    console.log('Deleting shipment:', selectedShipment);
-    setSelectedShipment(null);
+  const handleDeleteConfirm = async () => {
+    if (!selectedShipment) return;
+
+    try {
+      await deleteShipment(selectedShipment.id);
+      toast.success('배송 정보가 삭제되었습니다');
+      setSelectedShipment(null);
+      setIsDeleteOpen(false);
+      fetchShipments();
+    } catch (error) {
+      console.error('Delete shipment error:', error);
+      toast.error('삭제 중 오류가 발생했습니다');
+    }
+  };
+
+  const handleSuccess = () => {
+    fetchShipments();
   };
 
   return (
     <DeliveryManagementView
-      shipments={filteredShipments}
-      carriers={MOCK_CARRIERS}
+      shipments={shipments}
+      carriers={carriers}
       searchTerm={searchTerm}
+      isLoading={isLoading}
+      pagination={pagination}
       onSearchChange={handleSearchChange}
       isUploadDialogOpen={isUploadDialogOpen}
       setIsUploadDialogOpen={setIsUploadDialogOpen}
@@ -61,6 +111,7 @@ export const DeliveryManagementContainer = () => {
       onEditClick={handleEditClick}
       onDeleteClick={handleDeleteClick}
       onDeleteConfirm={handleDeleteConfirm}
+      onSuccess={handleSuccess}
     />
   );
 };

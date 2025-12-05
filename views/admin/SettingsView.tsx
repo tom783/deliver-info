@@ -4,10 +4,11 @@ import { Plus } from 'lucide-react';
 import { UserManagementTable } from '@/components/admin/UserManagementTable';
 import { UserDialog } from '@/components/admin/UserDialog';
 import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
-import { User } from '@/data/mocks/users';
+import { User } from '@/types';
 
 interface SettingsViewProps {
   users: User[];
+  isLoading?: boolean;
   isUserDialogOpen: boolean;
   setIsUserDialogOpen: (open: boolean) => void;
   isDeleteDialogOpen: boolean;
@@ -16,12 +17,19 @@ interface SettingsViewProps {
   onAddUser: () => void;
   onEditUser: (user: User) => void;
   onDeleteUser: (user: User) => void;
-  onSaveUser: (user: Omit<User, 'id' | 'created_at'> & { id?: number }) => void;
+  onSaveUser: (user: {
+    email?: string;
+    password?: string;
+    name: string;
+    role: 'master' | 'sub_admin';
+    id?: string;
+  }) => Promise<void>;
   onConfirmDelete: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   users,
+  isLoading,
   isUserDialogOpen,
   setIsUserDialogOpen,
   isDeleteDialogOpen,
@@ -50,6 +58,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <h2 className="text-lg font-semibold">계정 관리</h2>
         <UserManagementTable
           users={users}
+          isLoading={isLoading}
           onEdit={onEditUser}
           onDelete={onDeleteUser}
         />

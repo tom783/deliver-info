@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// 택배사 정보
+model Carrier {
+  id        BigInt     @id @default(autoincrement())
+  name      String     @unique
+  baseUrl   String     @map("base_url")
+  shipments Shipment[]
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@map("carriers")
+}
+
+// 배송 정보
+model Shipment {
+  id                  String   @id @default(uuid())
+  createdAt           DateTime @default(now()) @map("created_at")
+  recipientName       String   @map("recipient_name")
+  recipientPhoneFull  String   @map("recipient_phone_full")
+  recipientPhoneLast4 String   @map("recipient_phone_last4")
+  carrierId           BigInt   @map("carrier_id")
+  trackingNumber      String   @map("tracking_number")
+  productName         String   @map("product_name")
+  viewableUntil       DateTime @map("viewable_until")
+  deleteAt            DateTime @map("delete_at")
+
+  carrier Carrier @relation(fields: [carrierId], references: [id])
+
+  @@index([recipientName, recipientPhoneLast4])
+  @@index([deleteAt])
+  @@index([createdAt])
+  @@map("shipments")
+}
+
+// 관리자 계정 (Supabase Auth 연동)
+model AdminUser {
+  id        String   @id @default(uuid())
+  authId    String   @unique @map("auth_id")
+  email     String   @unique
+  name      String
+  role      UserRole @default(SUB_ADMIN)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("admin_users")
+}
+
+enum UserRole {
+  MASTER
+  SUB_ADMIN
+}

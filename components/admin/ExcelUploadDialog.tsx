@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -7,54 +7,81 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Upload, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import { bulkUploadShipments } from '@/lib/api/shipments';
 
 interface ExcelUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 export const ExcelUploadDialog: React.FC<ExcelUploadDialogProps> = ({
   open,
   onOpenChange,
+  onSuccess,
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setFile(null);
+      setError(null);
+    }
+  }, [open]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
   };
 
   const handleUpload = async () => {
-    if (!file) return;
+    setError(null);
+
+    if (!file) {
+      setError('파일을 선택해주세요');
+      return;
+    }
 
     setIsUploading(true);
-    // Simulate upload delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    toast.success(`${file.name} 업로드가 완료되었습니다.`);
-    setIsUploading(false);
-    setFile(null);
-    onOpenChange(false);
+
+    try {
+      const result = await bulkUploadShipments(file);
+
+      if (result.errorCount > 0) {
+        toast.warning(
+          `${result.successCount}건 업로드 완료, ${result.errorCount}건 실패`
+        );
+      } else {
+        toast.success(`${result.successCount}건 업로드가 완료되었습니다.`);
+      }
+
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError(err instanceof Error ? err.message : '업로드 중 오류가 발생했습니다');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleDownloadTemplate = () => {
     const headers = ['수취인명', '전화번호', '택배사명', '운송장번호', '상품명'];
     const sampleData = [
       {
-        '수취인명': '홍길동',
-        '전화번호': '010-1234-5678',
-        '택배사명': 'CJ대한통운',
-        '운송장번호': '1234567890',
-        '상품명': '사과 5kg',
+        수취인명: '홍길동',
+        전화번호: '010-1234-5678',
+        택배사명: 'CJ대한통운',
+        운송장번호: '1234567890',
+        상품명: '사과 5kg',
       },
     ];
 
@@ -92,6 +119,11 @@ export const ExcelUploadDialog: React.FC<ExcelUploadDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {error && (
+            <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
+              {error}
+            </div>
+          )}
           <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 hover:bg-gray-50 transition-colors cursor-pointer relative">
             <input
               type="file"
