@@ -11,7 +11,7 @@ import {
 import { Upload, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
-import { bulkUploadShipments } from '@/lib/api/shipments';
+import { useBulkUploadShipments } from '@/hooks/queries';
 
 interface ExcelUploadDialogProps {
   open: boolean;
@@ -25,8 +25,9 @@ export const ExcelUploadDialog: React.FC<ExcelUploadDialogProps> = ({
   onSuccess,
 }) => {
   const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const bulkUploadMutation = useBulkUploadShipments();
 
   useEffect(() => {
     if (open) {
@@ -50,10 +51,8 @@ export const ExcelUploadDialog: React.FC<ExcelUploadDialogProps> = ({
       return;
     }
 
-    setIsUploading(true);
-
     try {
-      const result = await bulkUploadShipments(file);
+      const result = await bulkUploadMutation.mutateAsync(file);
 
       if (result.errorCount > 0) {
         toast.warning(
@@ -68,8 +67,6 @@ export const ExcelUploadDialog: React.FC<ExcelUploadDialogProps> = ({
     } catch (err) {
       console.error('Upload error:', err);
       setError(err instanceof Error ? err.message : '업로드 중 오류가 발생했습니다');
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -152,8 +149,8 @@ export const ExcelUploadDialog: React.FC<ExcelUploadDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             취소
           </Button>
-          <Button onClick={handleUpload} disabled={!file || isUploading}>
-            {isUploading ? '업로드 중...' : '업로드'}
+          <Button onClick={handleUpload} disabled={!file || bulkUploadMutation.isPending}>
+            {bulkUploadMutation.isPending ? '업로드 중...' : '업로드'}
           </Button>
         </DialogFooter>
       </DialogContent>

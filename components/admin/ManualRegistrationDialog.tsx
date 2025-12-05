@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Carrier } from '@/types';
-import { createShipment } from '@/lib/api/shipments';
+import { useCreateShipment } from '@/hooks/queries';
 
 interface ManualRegistrationDialogProps {
   open: boolean;
@@ -34,8 +34,9 @@ export const ManualRegistrationDialog: React.FC<ManualRegistrationDialogProps> =
     trackingNumber: '',
     productName: '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const createShipmentMutation = useCreateShipment();
 
   useEffect(() => {
     if (open) {
@@ -59,24 +60,21 @@ export const ManualRegistrationDialog: React.FC<ManualRegistrationDialogProps> =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsSubmitting(true);
 
     // 클라이언트 유효성 검사
     const phoneDigits = formData.phone.replace(/\D/g, '');
     if (phoneDigits.length < 10 || phoneDigits.length > 11) {
       setError('전화번호는 10-11자리 숫자여야 합니다');
-      setIsSubmitting(false);
       return;
     }
 
     if (!/^[a-zA-Z0-9]+$/.test(formData.trackingNumber)) {
       setError('운송장번호는 영문과 숫자만 입력 가능합니다');
-      setIsSubmitting(false);
       return;
     }
 
     try {
-      await createShipment({
+      await createShipmentMutation.mutateAsync({
         recipientName: formData.recipientName,
         phone: formData.phone,
         carrierId: parseInt(formData.carrierId, 10),
@@ -90,8 +88,6 @@ export const ManualRegistrationDialog: React.FC<ManualRegistrationDialogProps> =
     } catch (err) {
       console.error('Create shipment error:', err);
       setError(err instanceof Error ? err.message : '등록 중 오류가 발생했습니다');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -189,8 +185,8 @@ export const ManualRegistrationDialog: React.FC<ManualRegistrationDialogProps> =
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               취소
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? '등록 중...' : '등록'}
+            <Button type="submit" disabled={createShipmentMutation.isPending}>
+              {createShipmentMutation.isPending ? '등록 중...' : '등록'}
             </Button>
           </DialogFooter>
         </form>

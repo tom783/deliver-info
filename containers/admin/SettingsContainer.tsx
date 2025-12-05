@@ -1,49 +1,37 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { SettingsView } from '@/views/admin/SettingsView';
-import { getUsers, createUser, updateUser, deleteUser } from '@/lib/api/users';
-import { User } from '@/types';
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/queries';
+import { useSettingsStore } from '@/stores';
 import { toast } from 'sonner';
 
 export const SettingsContainer = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  // Zustand store에서 UI 상태 가져오기
+  const {
+    isUserDialogOpen,
+    setIsUserDialogOpen,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    selectedUser,
+    openAddUserDialog,
+    openEditUserDialog,
+    openDeleteUserDialog,
+    closeAllDialogs,
+  } = useSettingsStore();
 
-  const fetchUsers = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getUsers();
-      setUsers(data.users);
-    } catch (error) {
-      console.error('Fetch users error:', error);
-      toast.error('사용자 목록을 불러오는데 실패했습니다');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // React Query hooks
+  const { data: usersData, isLoading, error: usersError } = useUsers();
+  const createUserMutation = useCreateUser();
+  const updateUserMutation = useUpdateUser();
+  const deleteUserMutation = useDeleteUser();
 
+  // 에러 처리
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  const handleAddUser = () => {
-    setSelectedUser(null);
-    setIsUserDialogOpen(true);
-  };
-
-  const handleEditUser = (user: User) => {
-    setSelectedUser(user);
-    setIsUserDialogOpen(true);
-  };
-
-  const handleDeleteUser = (user: User) => {
-    setSelectedUser(user);
-    setIsDeleteDialogOpen(true);
-  };
+    if (usersError) {
+      toast.error('사용자 목록을 불러오는데 실패했습니다');
+    }
+  }, [usersError]);
 
   const handleSaveUser = async (userData: {
     email?: string;
@@ -54,10 +42,13 @@ export const SettingsContainer = () => {
   }) => {
     if (userData.id) {
       // Update existing user
-      await updateUser(userData.id, {
-        name: userData.name,
-        role: userData.role,
-        password: userData.password,
+      await updateUserMutation.mutateAsync({
+        id: userData.id,
+        data: {
+          name: userData.name,
+          role: userData.role,
+          password: userData.password,
+        },
       });
       toast.success('사용자 정보가 수정되었습니다');
     } else {
@@ -65,7 +56,7 @@ export const SettingsContainer = () => {
       if (!userData.email || !userData.password) {
         throw new Error('이메일과 비밀번호를 입력해주세요');
       }
-      await createUser({
+      await createUserMutation.mutateAsync({
         email: userData.email,
         password: userData.password,
         name: userData.name,
@@ -74,23 +65,22 @@ export const SettingsContainer = () => {
       toast.success('사용자가 생성되었습니다');
     }
     setIsUserDialogOpen(false);
-    fetchUsers();
   };
 
   const handleConfirmDelete = async () => {
     if (!selectedUser) return;
 
     try {
-      await deleteUser(selectedUser.id);
+      await deleteUserMutation.mutateAsync(selectedUser.id);
       toast.success('사용자가 삭제되었습니다');
-      setSelectedUser(null);
-      setIsDeleteDialogOpen(false);
-      fetchUsers();
+      closeAllDialogs();
     } catch (error) {
       console.error('Delete user error:', error);
       toast.error(error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다');
     }
   };
+
+  const users = usersData?.users ?? [];
 
   return (
     <SettingsView
@@ -101,9 +91,9 @@ export const SettingsContainer = () => {
       isDeleteDialogOpen={isDeleteDialogOpen}
       setIsDeleteDialogOpen={setIsDeleteDialogOpen}
       selectedUser={selectedUser}
-      onAddUser={handleAddUser}
-      onEditUser={handleEditUser}
-      onDeleteUser={handleDeleteUser}
+      onAddUser={openAddUserDialog}
+      onEditUser={openEditUserDialog}
+      onDeleteUser={openDeleteUserDialog}
       onSaveUser={handleSaveUser}
       onConfirmDelete={handleConfirmDelete}
     />

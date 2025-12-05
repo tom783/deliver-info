@@ -19,7 +19,9 @@ interface UpdateUserData {
 
 // 관리자 목록 조회
 export async function getUsers(): Promise<UsersResponse> {
-  const res = await fetch('/api/admin/users');
+  const res = await fetch('/api/admin/users', {
+    credentials: 'include',
+  });
 
   if (!res.ok) {
     const data = await res.json();
@@ -34,6 +36,7 @@ export async function createUser(data: CreateUserData): Promise<{ user: User }> 
   const res = await fetch('/api/admin/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -50,6 +53,7 @@ export async function updateUser(id: string, data: UpdateUserData): Promise<{ us
   const res = await fetch(`/api/admin/users/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -65,6 +69,7 @@ export async function updateUser(id: string, data: UpdateUserData): Promise<{ us
 export async function deleteUser(id: string): Promise<{ success: boolean; message: string }> {
   const res = await fetch(`/api/admin/users/${id}`, {
     method: 'DELETE',
+    credentials: 'include',
   });
 
   if (!res.ok) {

@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Carrier, Shipment } from '@/types';
-import { updateShipment } from '@/lib/api/shipments';
+import { useUpdateShipment } from '@/hooks/queries';
 
 interface EditDeliveryDialogProps {
   open: boolean;
@@ -36,8 +36,9 @@ export const EditDeliveryDialog: React.FC<EditDeliveryDialogProps> = ({
     trackingNumber: '',
     productName: '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const updateShipmentMutation = useUpdateShipment();
 
   useEffect(() => {
     if (open) {
@@ -64,15 +65,16 @@ export const EditDeliveryDialog: React.FC<EditDeliveryDialogProps> = ({
     e.preventDefault();
     if (!shipment) return;
 
-    setIsSubmitting(true);
-
     try {
-      await updateShipment(shipment.id, {
-        recipientName: formData.recipientName,
-        phone: formData.phone,
-        carrierId: parseInt(formData.carrierId, 10),
-        trackingNumber: formData.trackingNumber,
-        productName: formData.productName,
+      await updateShipmentMutation.mutateAsync({
+        id: shipment.id,
+        data: {
+          recipientName: formData.recipientName,
+          phone: formData.phone,
+          carrierId: parseInt(formData.carrierId, 10),
+          trackingNumber: formData.trackingNumber,
+          productName: formData.productName,
+        },
       });
 
       toast.success('배송 정보가 수정되었습니다.');
@@ -81,8 +83,6 @@ export const EditDeliveryDialog: React.FC<EditDeliveryDialogProps> = ({
     } catch (err) {
       console.error('Update shipment error:', err);
       setError(err instanceof Error ? err.message : '수정 중 오류가 발생했습니다');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -178,8 +178,8 @@ export const EditDeliveryDialog: React.FC<EditDeliveryDialogProps> = ({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               취소
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? '수정 중...' : '수정'}
+            <Button type="submit" disabled={updateShipmentMutation.isPending}>
+              {updateShipmentMutation.isPending ? '수정 중...' : '수정'}
             </Button>
           </DialogFooter>
         </form>

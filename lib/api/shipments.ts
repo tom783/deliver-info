@@ -69,7 +69,9 @@ export async function getAdminShipments(
     ...(search && { search }),
   });
 
-  const res = await fetch(`/api/admin/shipments?${params}`);
+  const res = await fetch(`/api/admin/shipments?${params}`, {
+    credentials: 'include',
+  });
 
   if (!res.ok) {
     const data = await res.json();
@@ -84,6 +86,7 @@ export async function createShipment(data: CreateShipmentData): Promise<{ shipme
   const res = await fetch('/api/admin/shipments', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -103,6 +106,7 @@ export async function updateShipment(
   const res = await fetch(`/api/admin/shipments/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
 
@@ -118,6 +122,7 @@ export async function updateShipment(
 export async function deleteShipment(id: string): Promise<{ success: boolean; message: string }> {
   const res = await fetch(`/api/admin/shipments/${id}`, {
     method: 'DELETE',
+    credentials: 'include',
   });
 
   if (!res.ok) {
@@ -135,6 +140,7 @@ export async function bulkUploadShipments(file: File): Promise<BulkUploadRespons
 
   const res = await fetch('/api/admin/shipments/bulk-upload', {
     method: 'POST',
+    credentials: 'include',
     body: formData,
   });
 

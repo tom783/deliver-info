@@ -6,7 +6,9 @@ interface StatsResponse {
 
 // 대시보드 통계 조회
 export async function getStats(): Promise<StatsResponse> {
-  const res = await fetch('/api/admin/stats');
+  const res = await fetch('/api/admin/stats', {
+    credentials: 'include',
+  });
 
   if (!res.ok) {
     const data = await res.json();

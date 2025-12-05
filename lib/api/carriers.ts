@@ -6,7 +6,9 @@ interface CarriersResponse {
 
 // 택배사 목록 조회
 export async function getCarriers(): Promise<CarriersResponse> {
-  const res = await fetch('/api/admin/carriers');
+  const res = await fetch('/api/admin/carriers', {
+    credentials: 'include',
+  });
 
   if (!res.ok) {
     const data = await res.json();
