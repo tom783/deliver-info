@@ -66,13 +66,24 @@
     "accessibility": "Font 18px+, Input Height 50px+, High Contrast, 시각적 피드백 강화"
   },
   "feature_specifications": {
-    "user_flow": {
-      "landing": "HomeContainer -> HomeView (입력 폼)",
-      "result": "ResultContainer -> ResultView (결과 카드)"
+    "admin_features": [
+      "Dashboard: Overview of delivery stats",
+      "Delivery Management: List, Search, Upload Excel, Manual Register, Edit, Delete",
+      "Settings: Manage admin accounts (Master/Sub-admin)"
+    ],
+    "roles": {
+      "master": {
+        "description": "Super admin with full access",
+        "permissions": ["manage_delivery", "manage_users", "view_dashboard"]
+      },
+      "sub_admin": {
+        "description": "Limited admin for delivery operations",
+        "permissions": ["manage_delivery", "view_dashboard"]
+      }
     },
-    "admin_flow": {
-      "dashboard": "DashboardContainer -> DashboardView (테이블)",
-      "upload": "ExcelUploadContainer -> ExcelUploadView"
+    "user_flow": {
+      "user": "Enter Info -> View Result -> Copy/Track",
+      "admin": "Login -> Dashboard -> Delivery Management / Settings"
     }
   },
   "implementation_steps": [
