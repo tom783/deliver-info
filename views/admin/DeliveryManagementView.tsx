@@ -82,7 +82,7 @@ export const DeliveryManagementView: React.FC<DeliveryManagementViewProps> = ({
     <div className="p-8 space-y-6 bg-gray-50 min-h-screen">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">배송 관리</h1>
+          <h1 className="text-2xl font-bold text-gray-900">배송 관리!!</h1>
           <p className="text-gray-500">등록된 배송 정보를 조회하고 관리합니다.</p>
         </div>
         <div className="flex gap-2">
