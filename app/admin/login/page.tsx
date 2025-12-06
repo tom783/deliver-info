@@ -35,8 +35,8 @@ function LoginForm() {
       return;
     }
 
+    // 로그인 성공 - 바로 페이지 이동 (refresh 제거로 응답 속도 개선)
     router.push(redirect);
-    router.refresh();
   };
 
   return (

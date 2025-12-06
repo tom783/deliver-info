@@ -38,23 +38,38 @@ interface BulkUploadResponse {
   errors: Array<{ row: number; message: string }>;
 }
 
+// 공통 에러 처리 함수
+async function handleResponse<T>(res: Response, defaultError: string): Promise<T> {
+  if (!res.ok) {
+    let errorMessage = defaultError;
+    try {
+      const data = await res.json();
+      errorMessage = data.error || defaultError;
+    } catch {
+      // JSON 파싱 실패 시 기본 에러 메시지 사용
+    }
+    throw new Error(errorMessage);
+  }
+  return res.json();
+}
+
 // 사용자 배송 조회
 export async function searchShipments(
   recipientName: string,
   phoneLast4: string
 ): Promise<SearchShipmentsResponse> {
-  const res = await fetch('/api/shipments/search', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recipientName, phoneLast4 }),
-  });
+  try {
+    const res = await fetch('/api/shipments/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipientName, phoneLast4 }),
+    });
 
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || '조회 중 오류가 발생했습니다');
+    return handleResponse<SearchShipmentsResponse>(res, '조회 중 오류가 발생했습니다');
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
-
-  return res.json();
 }
 
 // 관리자 배송 목록 조회
@@ -63,39 +78,39 @@ export async function getAdminShipments(
   limit = 20,
   search = ''
 ): Promise<AdminShipmentsResponse> {
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: String(limit),
-    ...(search && { search }),
-  });
+  try {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      ...(search && { search }),
+    });
 
-  const res = await fetch(`/api/admin/shipments?${params}`, {
-    credentials: 'include',
-  });
+    const res = await fetch(`/api/admin/shipments?${params}`, {
+      credentials: 'include',
+    });
 
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || '목록 조회 중 오류가 발생했습니다');
+    return handleResponse<AdminShipmentsResponse>(res, '목록 조회 중 오류가 발생했습니다');
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
-
-  return res.json();
 }
 
 // 관리자 배송 등록
 export async function createShipment(data: CreateShipmentData): Promise<{ shipment: Shipment }> {
-  const res = await fetch('/api/admin/shipments', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(data),
-  });
+  try {
+    const res = await fetch('/api/admin/shipments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
 
-  if (!res.ok) {
-    const resData = await res.json();
-    throw new Error(resData.error || '등록 중 오류가 발생했습니다');
+    return handleResponse<{ shipment: Shipment }>(res, '등록 중 오류가 발생했습니다');
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
-
-  return res.json();
 }
 
 // 관리자 배송 수정
@@ -103,51 +118,51 @@ export async function updateShipment(
   id: string,
   data: UpdateShipmentData
 ): Promise<{ shipment: Shipment }> {
-  const res = await fetch(`/api/admin/shipments/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(data),
-  });
+  try {
+    const res = await fetch(`/api/admin/shipments/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
 
-  if (!res.ok) {
-    const resData = await res.json();
-    throw new Error(resData.error || '수정 중 오류가 발생했습니다');
+    return handleResponse<{ shipment: Shipment }>(res, '수정 중 오류가 발생했습니다');
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
-
-  return res.json();
 }
 
 // 관리자 배송 삭제
 export async function deleteShipment(id: string): Promise<{ success: boolean; message: string }> {
-  const res = await fetch(`/api/admin/shipments/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
-  });
+  try {
+    const res = await fetch(`/api/admin/shipments/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
 
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || '삭제 중 오류가 발생했습니다');
+    return handleResponse<{ success: boolean; message: string }>(res, '삭제 중 오류가 발생했습니다');
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
-
-  return res.json();
 }
 
 // 관리자 엑셀 대량 업로드
 export async function bulkUploadShipments(file: File): Promise<BulkUploadResponse> {
-  const formData = new FormData();
-  formData.append('file', file);
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
 
-  const res = await fetch('/api/admin/shipments/bulk-upload', {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  });
+    const res = await fetch('/api/admin/shipments/bulk-upload', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
 
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || '업로드 중 오류가 발생했습니다');
+    return handleResponse<BulkUploadResponse>(res, '업로드 중 오류가 발생했습니다');
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
-
-  return res.json();
 }

@@ -17,65 +17,80 @@ interface UpdateUserData {
   password?: string;
 }
 
+// 공통 에러 처리 함수
+async function handleResponse<T>(res: Response, defaultError: string): Promise<T> {
+  if (!res.ok) {
+    let errorMessage = defaultError;
+    try {
+      const data = await res.json();
+      errorMessage = data.error || defaultError;
+    } catch {
+      // JSON 파싱 실패 시 기본 에러 메시지 사용
+    }
+    throw new Error(errorMessage);
+  }
+  return res.json();
+}
+
 // 관리자 목록 조회
 export async function getUsers(): Promise<UsersResponse> {
-  const res = await fetch('/api/admin/users', {
-    credentials: 'include',
-  });
+  try {
+    const res = await fetch('/api/admin/users', {
+      credentials: 'include',
+    });
 
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || '사용자 목록 조회 중 오류가 발생했습니다');
+    return handleResponse<UsersResponse>(res, '사용자 목록 조회 중 오류가 발생했습니다');
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
-
-  return res.json();
 }
 
 // 관리자 생성
 export async function createUser(data: CreateUserData): Promise<{ user: User }> {
-  const res = await fetch('/api/admin/users', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(data),
-  });
+  try {
+    const res = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
 
-  if (!res.ok) {
-    const resData = await res.json();
-    throw new Error(resData.error || '사용자 생성 중 오류가 발생했습니다');
+    return handleResponse<{ user: User }>(res, '사용자 생성 중 오류가 발생했습니다');
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
-
-  return res.json();
 }
 
 // 관리자 수정
 export async function updateUser(id: string, data: UpdateUserData): Promise<{ user: User }> {
-  const res = await fetch(`/api/admin/users/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(data),
-  });
+  try {
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
 
-  if (!res.ok) {
-    const resData = await res.json();
-    throw new Error(resData.error || '사용자 수정 중 오류가 발생했습니다');
+    return handleResponse<{ user: User }>(res, '사용자 수정 중 오류가 발생했습니다');
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
-
-  return res.json();
 }
 
 // 관리자 삭제
 export async function deleteUser(id: string): Promise<{ success: boolean; message: string }> {
-  const res = await fetch(`/api/admin/users/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
-  });
+  try {
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
 
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || '사용자 삭제 중 오류가 발생했습니다');
+    return handleResponse<{ success: boolean; message: string }>(res, '사용자 삭제 중 오류가 발생했습니다');
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
-
-  return res.json();
 }
