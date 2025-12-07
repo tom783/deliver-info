@@ -4,23 +4,32 @@ import { z } from 'zod';
 
 const searchSchema = z.object({
   recipientName: z.string().min(1, '이름을 입력해주세요'),
-  phoneLast4: z
-    .string()
-    .length(4, '전화번호 뒷4자리를 정확히 입력해주세요')
-    .regex(/^\d{4}$/, '숫자만 입력해주세요'),
+  phoneLast4: z.string().min(1, '전화번호 뒷4자리를 입력해주세요'),
 });
+
+// 숫자만 추출
+function normalizeDigits(value: string): string {
+  return value.replace(/\D/g, '');
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validated = searchSchema.parse(body);
 
+    // 전화번호 뒷4자리에서 숫자만 추출
+    const phoneLast4 = normalizeDigits(validated.phoneLast4);
+
+    if (phoneLast4.length !== 4) {
+      return NextResponse.json({ error: '전화번호 뒷4자리를 정확히 입력해주세요' }, { status: 400 });
+    }
+
     const now = new Date();
 
     const shipments = await prisma.shipment.findMany({
       where: {
         recipientName: validated.recipientName,
-        recipientPhoneLast4: validated.phoneLast4,
+        recipientPhoneLast4: phoneLast4,
         viewableUntil: { gte: now },
       },
       include: {

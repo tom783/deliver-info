@@ -20,6 +20,11 @@ function normalizePhone(phone: string): { full: string; last4: string } {
   };
 }
 
+function normalizeTrackingNumber(trackingNumber: string): string {
+  // 숫자와 영문만 남기고 제거
+  return String(trackingNumber).replace(/[^a-zA-Z0-9]/g, '');
+}
+
 export async function POST(request: NextRequest) {
   try {
     const admin = await getAdminUser();
@@ -105,7 +110,7 @@ export async function POST(request: NextRequest) {
         recipientPhoneFull: full,
         recipientPhoneLast4: last4,
         carrierId,
-        trackingNumber: String(row['운송장번호']),
+        trackingNumber: normalizeTrackingNumber(row['운송장번호']),
         productName: row['상품명'] || '',
         viewableUntil: addDays(now, 5),
         deleteAt: addDays(now, 14),

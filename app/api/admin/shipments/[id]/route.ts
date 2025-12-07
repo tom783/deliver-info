@@ -11,6 +11,11 @@ function normalizePhone(phone: string): { full: string; last4: string } {
   };
 }
 
+function normalizeTrackingNumber(trackingNumber: string): string {
+  // 숫자와 영문만 남기고 제거
+  return trackingNumber.replace(/[^a-zA-Z0-9]/g, '');
+}
+
 // PUT: 배송 정보 수정
 const updateShipmentSchema = z.object({
   recipientName: z.string().min(1, '수취인명을 입력해주세요').optional(),
@@ -56,7 +61,7 @@ export async function PUT(
       updateData.carrierId = BigInt(validated.carrierId);
     }
     if (validated.trackingNumber) {
-      updateData.trackingNumber = validated.trackingNumber;
+      updateData.trackingNumber = normalizeTrackingNumber(validated.trackingNumber);
     }
     if (validated.productName) {
       updateData.productName = validated.productName;
