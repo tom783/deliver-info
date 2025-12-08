@@ -11,6 +11,8 @@ export const DeliveryManagementContainer = () => {
   const {
     searchTerm,
     setSearchTerm,
+    debouncedSearchTerm,
+    setDebouncedSearchTerm,
     page,
     limit,
     setPage,
@@ -28,12 +30,21 @@ export const DeliveryManagementContainer = () => {
     closeAllDialogs,
   } = useDeliveryStore();
 
-  // React Query hooks
+  // Debounce 검색어 (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, setDebouncedSearchTerm]);
+
+  // React Query hooks - debouncedSearchTerm 사용
   const {
     data: shipmentsData,
     isLoading,
     error: shipmentsError,
-  } = useAdminShipments(page, limit, searchTerm);
+  } = useAdminShipments(page, limit, debouncedSearchTerm);
 
   const { data: carriersData, error: carriersError } = useCarriers();
 

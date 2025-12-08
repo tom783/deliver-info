@@ -5,6 +5,8 @@ interface DeliveryState {
   // 검색
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  debouncedSearchTerm: string;
+  setDebouncedSearchTerm: (term: string) => void;
 
   // 페이지네이션
   page: number;
@@ -39,7 +41,9 @@ interface DeliveryState {
 export const useDeliveryStore = create<DeliveryState>((set) => ({
   // 검색
   searchTerm: '',
-  setSearchTerm: (term) => set({ searchTerm: term, page: 1 }),
+  setSearchTerm: (term) => set({ searchTerm: term }),
+  debouncedSearchTerm: '',
+  setDebouncedSearchTerm: (term) => set({ debouncedSearchTerm: term, page: 1 }),
 
   // 페이지네이션
   page: 1,
