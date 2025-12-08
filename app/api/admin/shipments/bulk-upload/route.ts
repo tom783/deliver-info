@@ -63,6 +63,9 @@ export async function POST(request: NextRequest) {
     const carriers = await prisma.carrier.findMany();
     const carrierMap = new Map(carriers.map((c) => [c.name, c.id]));
 
+    // 엑셀 파일 내 중복 체크용 Set
+    const uploadSet = new Set<string>();
+
     // 데이터 변환 및 검증
     const now = new Date();
     const validData: Array<{
@@ -104,30 +107,45 @@ export async function POST(request: NextRequest) {
       }
 
       const { full, last4 } = normalizePhone(row['전화번호']);
+      const normalizedTracking = normalizeTrackingNumber(row['운송장번호']);
+
+      // 엑셀 파일 내 중복 체크
+      const key = `${normalizedTracking}|${row['수취인명']}|${last4}`;
+      if (uploadSet.has(key)) {
+        errors.push({ row: rowNum, message: '파일 내 중복 데이터입니다' });
+        return;
+      }
+      uploadSet.add(key);
 
       validData.push({
         recipientName: row['수취인명'],
         recipientPhoneFull: full,
         recipientPhoneLast4: last4,
         carrierId,
-        trackingNumber: normalizeTrackingNumber(row['운송장번호']),
+        trackingNumber: normalizedTracking,
         productName: row['상품명'] || '',
         viewableUntil: addDays(now, 5),
         deleteAt: addDays(now, 14),
       });
     });
 
-    // 유효한 데이터 일괄 삽입
+    // 유효한 데이터 일괄 삽입 (DB 중복은 skipDuplicates로 처리)
+    let insertedCount = 0;
     if (validData.length > 0) {
-      await prisma.shipment.createMany({
+      const result = await prisma.shipment.createMany({
         data: validData,
+        skipDuplicates: true, // DB에 이미 있는 중복 데이터는 건너뜀
       });
+      insertedCount = result.count;
     }
+
+    const skippedCount = validData.length - insertedCount;
 
     return NextResponse.json({
       success: true,
       totalRows: rows.length,
-      successCount: validData.length,
+      successCount: insertedCount,
+      skippedCount, // DB 중복으로 건너뛴 건수
       errorCount: errors.length,
       errors: errors.slice(0, 10), // 최대 10개 오류만 반환
     });

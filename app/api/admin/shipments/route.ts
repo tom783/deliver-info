@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAdminUser } from '@/lib/auth';
 import { z } from 'zod';
 import { addDays } from 'date-fns';
+import { Prisma } from '@prisma/client';
 
 function normalizePhone(phone: string): { full: string; last4: string } {
   const digitsOnly = phone.replace(/\D/g, '');
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
     const validated = createShipmentSchema.parse(body);
 
     const { full, last4 } = normalizePhone(validated.phone);
+    const normalizedTrackingNumber = normalizeTrackingNumber(validated.trackingNumber);
     const now = new Date();
 
     const shipment = await prisma.shipment.create({
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
         recipientPhoneFull: full,
         recipientPhoneLast4: last4,
         carrierId: BigInt(validated.carrierId),
-        trackingNumber: normalizeTrackingNumber(validated.trackingNumber),
+        trackingNumber: normalizedTrackingNumber,
         productName: validated.productName,
         viewableUntil: addDays(now, 5),
         deleteAt: addDays(now, 14),
@@ -143,6 +145,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: error.issues[0].message },
         { status: 400 }
+      );
+    }
+    // Prisma unique constraint 위반 (P2002)
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json(
+        { error: '이미 등록된 배송 정보입니다' },
+        { status: 409 }
       );
     }
     console.error('Create shipment error:', error);
