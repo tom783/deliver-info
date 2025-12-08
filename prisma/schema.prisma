@@ -34,6 +34,9 @@ model Shipment {
 
   carrier Carrier @relation(fields: [carrierId], references: [id])
 
+  @@index([recipientName])
+  @@index([recipientPhoneFull])
+  @@index([trackingNumber])
   @@index([recipientName, recipientPhoneLast4])
   @@index([deleteAt])
   @@index([createdAt])
