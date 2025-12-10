@@ -40,11 +40,24 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // /api/admin 경로 보호
+  // /api/admin 경로 보호 및 user 정보 전달
   if (request.nextUrl.pathname.startsWith('/api/admin')) {
     if (!user) {
       return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
     }
+
+    // API route로 user 정보를 header로 전달하여 중복 인증 호출 방지
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-user-id', user.id);
+    requestHeaders.set('x-user-email', user.email || '');
+
+    supabaseResponse = NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+    // 기존 쿠키 설정 유지
+    request.cookies.getAll().forEach(cookie => {
+      supabaseResponse.cookies.set(cookie.name, cookie.value);
+    });
   }
 
   return supabaseResponse;
