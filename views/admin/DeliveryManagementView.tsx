@@ -51,6 +51,7 @@ interface DeliveryManagementViewProps {
   onDeleteClick: (shipment: Shipment) => void;
   onDeleteConfirm: () => void;
   onSuccess?: () => void;
+  onPageChange: (page: number) => void;
 }
 
 export const DeliveryManagementView: React.FC<DeliveryManagementViewProps> = ({
@@ -73,6 +74,7 @@ export const DeliveryManagementView: React.FC<DeliveryManagementViewProps> = ({
   onDeleteClick,
   onDeleteConfirm,
   onSuccess,
+  onPageChange,
 }) => {
   const getCarrierName = (id: number) => {
     return carriers.find((c) => c.id === id)?.name || 'Unknown';
@@ -181,16 +183,31 @@ export const DeliveryManagementView: React.FC<DeliveryManagementViewProps> = ({
           </TableBody>
         </Table>
         
-        {/* Pagination UI (Mock) */}
-        <div className="flex items-center justify-end space-x-2 p-4 border-t">
-          <Button variant="outline" size="sm" disabled>
-            <ChevronLeft className="h-4 w-4" />
-            이전
-          </Button>
-          <Button variant="outline" size="sm" disabled>
-            다음
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        {/* Pagination */}
+        <div className="flex items-center justify-between p-4 border-t">
+          <span className="text-sm text-gray-500">
+            총 {pagination?.total || 0}건 ({pagination?.page || 1} / {pagination?.totalPages || 1} 페이지)
+          </span>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!pagination || pagination.page <= 1}
+              onClick={() => pagination && onPageChange(pagination.page - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              이전
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!pagination || pagination.page >= pagination.totalPages}
+              onClick={() => pagination && onPageChange(pagination.page + 1)}
+            >
+              다음
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 

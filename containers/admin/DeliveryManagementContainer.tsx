@@ -111,6 +111,7 @@ export const DeliveryManagementContainer = () => {
       onDeleteClick={openDeleteDialog}
       onDeleteConfirm={handleDeleteConfirm}
       onSuccess={() => {}} // React Query가 자동으로 캐시 무효화 처리
+      onPageChange={setPage}
     />
   );
 };
