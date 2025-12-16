@@ -30,14 +30,15 @@ export const DeliveryManagementContainer = () => {
     closeAllDialogs,
   } = useDeliveryStore();
 
-  // Debounce 검색어 (300ms)
+  // Debounce 검색어 (300ms) + 검색 시 1페이지로 리셋
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
+      setPage(1); // 검색어 변경 시 1페이지로 리셋
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, setDebouncedSearchTerm]);
+  }, [searchTerm, setDebouncedSearchTerm, setPage]);
 
   // React Query hooks - debouncedSearchTerm 사용
   const {

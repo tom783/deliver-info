@@ -24,13 +24,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '전화번호 뒷4자리를 정확히 입력해주세요' }, { status: 400 });
     }
 
-    const now = new Date();
-
     const shipments = await prisma.shipment.findMany({
       where: {
         recipientName: validated.recipientName,
         recipientPhoneLast4: phoneLast4,
-        viewableUntil: { gte: now },
       },
       include: {
         carrier: true,

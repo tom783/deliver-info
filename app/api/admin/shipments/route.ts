@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
         carrierId: BigInt(validated.carrierId),
         trackingNumber: normalizedTrackingNumber,
         productName: validated.productName,
-        viewableUntil: addDays(now, 5),
+        viewableUntil: addDays(now, 10),
         deleteAt: addDays(now, 14),
       },
       include: { carrier: true },

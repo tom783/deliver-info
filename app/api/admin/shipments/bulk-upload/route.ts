@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         carrierId,
         trackingNumber: normalizedTracking,
         productName: row['상품명'] || '',
-        viewableUntil: addDays(now, 5),
+        viewableUntil: addDays(now, 10),
         deleteAt: addDays(now, 14),
       });
     });
